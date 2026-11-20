@@ -1,0 +1,48 @@
+name: TeamFlow Stage 8 isolated CI evidence
+on:
+  push:
+    branches:
+      - stage8/live-ci-test
+    paths:
+      - ci-outcome.txt
+      - .github/workflows/teamflow-ci-sandbox.yml
+  workflow_dispatch:
+    inputs:
+      outcome:
+        description: Intentional fictional CI result
+        required: true
+        type: choice
+        options:
+          - fail
+          - pass
+permissions:
+  contents: read
+jobs:
+  evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+      - name: Evaluate fictional CI outcome
+        env:
+          DISPATCH_OUTCOME: ${{ inputs.outcome }}
+        run: |
+          set -eu
+          if [ -n "$DISPATCH_OUTCOME" ]; then
+            result="$DISPATCH_OUTCOME"
+          else
+            result="$(cat ci-outcome.txt)"
+          fi
+          case "$result" in
+            fail)
+              echo "Expected sandbox CI failure (no external services)"
+              exit 1
+              ;;
+            pass)
+              echo "Expected sandbox CI success (no external services)"
+              ;;
+            *)
+              echo "Invalid fixture outcome"
+              exit 2
+              ;;
+          esac
